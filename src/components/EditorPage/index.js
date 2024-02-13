@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { Editor, EditorState, RichUtils, getDefaultKeyBinding, Modifier, SelectionState } from 'draft-js';
 import 'draft-js/dist/Draft.css';
-import styles from './style.module.css'
-
+import styles from './styles.module.css'
 const EditorPage = () => {
   const [editorState, setEditorState] = useState(() => EditorState.createEmpty());
 
@@ -15,15 +14,24 @@ const EditorPage = () => {
     return EditorState.forceSelection(editorState, editorState.getSelection());
 }
 
-
   const handleKeyCommand = (command) => {
     if (command === 'convert-to-heading') {
       convertToHeading();
       return 'handled';
     }
 
-    if (command === 'convert-to-red') {
-      convertToRed();
+    else if (command === 'RED') {
+      convertToInline(command, "**");
+      return 'handled';
+    }
+
+    else if (command === 'BOLD') {
+      convertToInline(command, "*");
+      return 'handled';
+    }
+
+    else if (command === 'UNDERLINE') {
+      convertToInline(command, "***");
       return 'handled';
     }
 
@@ -42,23 +50,29 @@ const EditorPage = () => {
       return 'convert-to-heading';
     }
     if (e.keyCode === 32 && e.target.textContent.startsWith('*')) {
-      return 'convert-to-red';
+      return 'BOLD';
+    }
+    if (e.keyCode === 32 && e.target.textContent.startsWith('**')) {
+      return 'RED';
+    }
+    if (e.keyCode === 32 && e.target.textContent.startsWith('***')) {
+      return 'UNDERLINE';
     }
     return getDefaultKeyBinding(e);
   };
 
-  const convertToHeading = () => {
-    const selection = editorState.getSelection();
+  const removeMarkerAndApplyBlocktype = (startString, selection) => {
     const contentState = editorState.getCurrentContent();
     const blockKey = selection.getStartKey();
     const block = contentState.getBlockForKey(blockKey);
     const blockText = block.getText();
 
-    // Check if the current block is a paragraph and starts with #
-    if (blockText.trim().startsWith('#')) {
-      const newText = blockText.substring(1); // Remove the "#" and space
-      // console.log('newText', newText);
-      const newContentState = Modifier.replaceText(
+    let newContentState={};
+
+    if (blockText.trim().startsWith(startString)) {
+      const markerLength = startString.length;
+      const newText = blockText.substring(markerLength); // Remove the startString and space
+      newContentState = Modifier.replaceText(
         contentState,
         selection.merge({
           anchorOffset: 0,
@@ -66,6 +80,15 @@ const EditorPage = () => {
         }),
         newText
       );
+  }
+
+  return newContentState;
+}
+
+  const convertToHeading = () => {
+    const selection = editorState.getSelection();
+
+    const newContentState = removeMarkerAndApplyBlocktype("#", selection);
 
       // Convert the block to header-one
       const updatedContentState = Modifier.setBlockType(
@@ -74,13 +97,6 @@ const EditorPage = () => {
         'header-one'
       );
 
-      // Apply red color to the text
-      // const contentWithRedColor = Modifier.applyInlineStyle(
-      //   updatedContentState,
-      //   selection,
-      //   'RED'
-      // );
-
       // Update the editor state
       const newEditorState = EditorState.push(editorState, updatedContentState, 'change-block-type');
 
@@ -88,45 +104,27 @@ const EditorPage = () => {
       const finalEditorState = moveFocusToEnd(newEditorState);
 
       onChange(finalEditorState);
-    }
+    
   };
 
-  const convertToRed = ()=>{
-
+  const convertToInline = (command, startMarker)=>{
     const selection = editorState.getSelection();
-    const contentState = editorState.getCurrentContent();
-    const blockKey = selection.getStartKey();
-    const block = contentState.getBlockForKey(blockKey);
-    const blockText = block.getText();
+    const newContentState = removeMarkerAndApplyBlocktype(startMarker, selection);
 
-
-    if(blockText.trim().startsWith('*')){
-      const newText = blockText.substring(1); // Remove the "*" and space
-      console.log('newText', newText);
-      const newContentState = Modifier.replaceText(
-        contentState,
-        selection.merge({
-          anchorOffset: 0,
-          focusOffset: blockText.length // Remove only the "*" and space
-        }),
-        newText
-      );
-
-
-       const contentWithRedColor = Modifier.applyInlineStyle(
+        // Apply inline style to the text
+      const contentWithInlineStyle = Modifier.applyInlineStyle(
         newContentState,
         selection,
-        styles.red
+        styles[command]
       );
 
-      const newEditorState = EditorState.push(editorState, contentWithRedColor, 'change-block-type');
+      const newEditorState = EditorState.push(editorState, contentWithInlineStyle, 'change-block-type');
 
     
       const finalEditorState = moveFocusToEnd(newEditorState);
 
-      onChange(finalEditorState);
-      
-    }
+      onChange(finalEditorState);  
+    
   }
 
   return (
