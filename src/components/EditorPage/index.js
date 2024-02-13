@@ -149,6 +149,7 @@ const EditorPage = () => {
           Demo editor by <span className={styles.name}>
             Mahak Bharatkar
           </span>
+          <a href="/MahakResume14.pdf" download className={styles.download_resume}>Download Resume</a>
         </div>
 
         <button

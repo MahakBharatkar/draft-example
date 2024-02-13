@@ -36,4 +36,12 @@
     border: 1px solid #ae2a2a ;
     border-radius: 6px;
   font-size: 16px;
+  background-color: #ae2a2a;
+  color: white;
+}
+
+.download_resume{
+    font-size: 12px;
+    margin-left: 20px;
+    color: black;
 }
